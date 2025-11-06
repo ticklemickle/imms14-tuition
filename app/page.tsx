@@ -7,16 +7,15 @@ import styles from "./page.module.css";
 const SEMESTER_START = new Date("2025-09-02T00:00:00+09:00");
 const SEMESTER_END = new Date("2025-12-20T23:59:59+09:00");
 const CLASS_DAYS = [1, 3, 5]; // 월(1), 수(3), 금(5)
-const CLASS_START = { hour: 9, minute: 0 };
-const CLASS_MINUTES = 120;
+const CLASS_START = { hour: 9, minute: 0 }; // 09:00 시작
+const CLASS_MINUTES = 120; // 2시간 수업
 const HOLIDAYS = ["2025-09-15", "2025-09-16"];
 
-// ===== 타입 정의 =====
+// ===== 타입 =====
 interface Session {
   start: Date;
   end: Date;
 }
-
 interface ClassTotals {
   totalMin: number;
   elapsedMin: number;
@@ -28,11 +27,9 @@ interface ClassTotals {
 function isHoliday(d: Date): boolean {
   return HOLIDAYS.includes(d.toISOString().slice(0, 10));
 }
-
 function sessionRangeOn(date: Date): Session | null {
   const day = date.getDay();
   if (!CLASS_DAYS.includes(day) || isHoliday(date)) return null;
-
   const start = new Date(
     date.getFullYear(),
     date.getMonth(),
@@ -42,11 +39,9 @@ function sessionRangeOn(date: Date): Session | null {
     0
   );
   const end = new Date(start.getTime() + CLASS_MINUTES * 60 * 1000);
-
   if (end < SEMESTER_START || start > SEMESTER_END) return null;
   return { start, end };
 }
-
 function walkDates(start: Date, end: Date, cb: (d: Date) => void): void {
   const d = new Date(start);
   while (d <= end) {
@@ -54,7 +49,6 @@ function walkDates(start: Date, end: Date, cb: (d: Date) => void): void {
     d.setDate(d.getDate() + 1);
   }
 }
-
 function computeClassTotals(now = new Date()): ClassTotals {
   let totalMin = 0;
   let elapsedMin = 0;
@@ -65,7 +59,6 @@ function computeClassTotals(now = new Date()): ClassTotals {
     const s = sessionRangeOn(d);
     if (!s) return;
     totalMin += CLASS_MINUTES;
-
     if (now >= s.end) {
       elapsedMin += CLASS_MINUTES;
     } else if (now > s.start && now < s.end) {
@@ -77,31 +70,26 @@ function computeClassTotals(now = new Date()): ClassTotals {
 
   return { totalMin, elapsedMin, inSession, currentSession };
 }
-
 function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
-
 function fmtDuration(min: number): string {
   const m = Math.max(0, Math.round(min));
   const h = Math.floor(m / 60);
   const mm = m % 60;
   return h > 0 ? `${h}시간 ${mm}분` : `${mm}분`;
 }
-
 function ymd(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const da = String(d.getDate()).padStart(2, "0");
   return `${y}.${m}.${da}`;
 }
-
 const fmtKRW0 = new Intl.NumberFormat("ko-KR", {
   style: "currency",
   currency: "KRW",
   maximumFractionDigits: 0,
 });
-
 const fmtKRW2 = new Intl.NumberFormat("ko-KR", {
   style: "currency",
   currency: "KRW",
@@ -111,18 +99,39 @@ const fmtKRW2 = new Intl.NumberFormat("ko-KR", {
 
 // ===== 메인 컴포넌트 =====
 export default function Page() {
+  const DEFAULT_TUITION = "10500000";
+
   const [tuitionInput, setTuitionInput] = useState<string>(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("tuitionKRW") ?? "";
+    if (typeof window === "undefined") return DEFAULT_TUITION;
+
+    const raw = localStorage.getItem("tuitionKRW"); // 기존 로딩 코드 :contentReference[oaicite:2]{index=2}
+    if (raw == null) return DEFAULT_TUITION;
+
+    const digits = raw.replace(/[^\d]/g, "");
+    const n = Number(digits);
+
+    const valid = Number.isFinite(n) && n >= 10_000 && n <= 50_000_000;
+
+    return valid ? digits : DEFAULT_TUITION;
   });
 
+  // 클럭 & hydration 플래그
   const [now, setNow] = useState<Date>(new Date());
-
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
+    // hydration 완료 플래그는 비동기로 설정 (React 18 StrictMode 경고 방지)
+    const id = setTimeout(() => setHydrated(true), 0);
+
+    // 1초마다 현재 시간 업데이트
     const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
+
+    return () => {
+      clearTimeout(id);
+      clearInterval(t);
+    };
   }, []);
 
+  // 계산 (클라이언트·서버 동일 로직, 단 렌더는 hydrated 이후에만)
   const calc = useMemo(() => {
     const raw = (tuitionInput || "").toString().replace(/,/g, "");
     const tuition = Number(raw);
@@ -156,36 +165,45 @@ export default function Page() {
       )} • 초당 약 ${fmtKRW2.format(perSec)} 감소`,
       scheduleText: `학기: ${ymd(SEMESTER_START)} ~ ${ymd(
         SEMESTER_END
-      )} • 요일: 월/수/금 • 매회 ${CLASS_MINUTES}분`,
+      )} • 요일: 수/토 • 매회 ${CLASS_MINUTES}분`,
     };
   }, [tuitionInput, now]);
 
+  // 진행바 CSS 변수 업데이트 (클라이언트 전용)
   useEffect(() => {
+    if (!hydrated) return;
     document.documentElement.style.setProperty(
       "--progress",
       String(calc.ratio)
     );
-  }, [calc.ratio]);
+  }, [calc.ratio, hydrated]);
 
+  // 저장/초기화 & 토스트
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
-
   function showToast(msg: string): void {
     setToast(msg);
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 1400);
   }
-
   function saveTuition(): void {
     localStorage.setItem("tuitionKRW", tuitionInput);
     showToast("저장되었습니다 ✅");
   }
-
   function resetAll(): void {
     localStorage.removeItem("tuitionKRW");
     setTuitionInput("");
     showToast("초기화 완료 🧹");
   }
+
+  // SSR에는 placeholder를 렌더 → hydration 후 실제 값 렌더
+  const Placeholder = (
+    <>
+      <div className={styles.tag} aria-hidden="true">
+        <b>0%</b> 만큼 사용 중 • <span>남은 수업시간 계산 중…</span>
+      </div>
+    </>
+  );
 
   return (
     <div className={styles.wrap}>
@@ -201,10 +219,14 @@ export default function Page() {
           <h1>
             등록금이 살살 녹는다 <span aria-hidden="true">🍦</span>
           </h1>
-          <div className={styles.tag} role="status" aria-live="polite">
-            <b>{calc.pctText}</b> 만큼 사용 중 •{" "}
-            <span>{calc.timeLeftText}</span>
-          </div>
+          {hydrated ? (
+            <div className={styles.tag} role="status" aria-live="polite">
+              <b>{calc.pctText}</b> 만큼 사용 중 •{" "}
+              <span>{calc.timeLeftText}</span>
+            </div>
+          ) : (
+            Placeholder
+          )}
         </div>
       </header>
 
@@ -227,50 +249,54 @@ export default function Page() {
                 onChange={(e) => setTuitionInput(e.target.value)}
               />
               <p className={styles.hint}>
-                * 수업 총 시간/날짜는 하드코딩된 학사일정으로 자동 계산됩니다.
+                * 수업 총 시간/날짜는 학사일정으로 자동 계산됩니다.
               </p>
             </div>
 
-            <div className={styles.rowActions}>
-              <button
-                className={styles.btn}
-                type="button"
-                onClick={saveTuition}
-              >
-                저장
-              </button>
-              <button
-                className={`${styles.btn} ${styles.secondary}`}
-                type="button"
-                onClick={resetAll}
-              >
-                초기화
-              </button>
-            </div>
-
-            <div className={styles.hint}>{calc.scheduleText}</div>
-            <div className={styles.hint}>{calc.rateText}</div>
-            {toast && <div className={styles.hint}>{toast}</div>}
+            {hydrated && (
+              <>
+                <div className={styles.hint}>{calc.scheduleText}</div>
+                <div className={styles.hint} suppressHydrationWarning>
+                  {calc.rateText}
+                </div>
+                {toast && <div className={styles.hint}>{toast}</div>}
+              </>
+            )}
           </div>
 
           <div className={styles.viz}>
             <div className={styles.bar} aria-hidden="true">
               <div className={styles.fill}></div>
             </div>
-            <div className={styles.stats} aria-live="polite">
-              <div className={styles.pill}>
-                <span className={styles.hint}>지금까지 사용된 등록금</span>
-                <span className={styles.num} id="used">
-                  {calc.usedKRW}
-                </span>
+
+            {hydrated ? (
+              <div className={styles.stats} aria-live="polite">
+                <div className={styles.pill}>
+                  <span className={styles.hint}>지금까지 사용된 등록금</span>
+                  <span className={styles.num} id="used">
+                    {calc.usedKRW}
+                  </span>
+                </div>
+                <div className={styles.pill}>
+                  <span className={styles.hint}>남은 등록금</span>
+                  <span className={styles.num} id="remain">
+                    {calc.remainKRW}
+                  </span>
+                </div>
               </div>
-              <div className={styles.pill}>
-                <span className={styles.hint}>남은 등록금</span>
-                <span className={styles.num} id="remain">
-                  {calc.remainKRW}
-                </span>
+            ) : (
+              <div className={styles.stats} aria-hidden="true">
+                <div className={styles.pill}>
+                  <span className={styles.hint}>지금까지 사용된 등록금</span>
+                  <span className={styles.num}>—</span>
+                </div>
+                <div className={styles.pill}>
+                  <span className={styles.hint}>남은 등록금</span>
+                  <span className={styles.num}>—</span>
+                </div>
               </div>
-            </div>
+            )}
+
             <div className={styles.puddle} aria-hidden="true"></div>
             <p className={styles.hint}>
               ⏱️ 수업시간 기준으로 초당 감소를 실시간 반영합니다.
@@ -280,7 +306,7 @@ export default function Page() {
       </section>
 
       <footer>
-        만든이: <a href="#">Andy</a> • 테마: 바닐라 아이스크림
+        만든이: <a href="#">JunHyun Lee</a> • 테마: 임스덕
       </footer>
     </div>
   );
