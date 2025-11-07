@@ -7,35 +7,17 @@ import styles from "./page.module.css";
 const SEMESTER_START = new Date("2025-09-02T00:00:00+09:00");
 const SEMESTER_END = new Date("2025-12-20T23:59:59+09:00");
 
-/* ===== 요일/분 단위 수업 계획 (수=3h, 토=6h) ===== */
-const CLASS_DAY_PLANS = [
-  { weekday: 3, minutes: 180 }, // 수요일 3시간
-  { weekday: 6, minutes: 360 }, // 토요일 6시간
-] as const;
-
-/* ===== 등록금/총시간/단가 ===== */
-const TOTAL_HOURS = 132;
-const TOTAL_SECS = TOTAL_HOURS * 3600; // 132h = 475,200s
-const PER_SEC = 22.09; // 초당 22.09원
+/* ===== 등록금(고정) ===== */
 const FIXED_TUITION = 10_500_000;
 
+/* ===== 전체 기간(초) =====
+   학기 시작~종료까지의 '실제 경과 초'를 기준으로 선형 차감 */
+const DURATION_SECS = Math.max(
+  1,
+  Math.floor((SEMESTER_END.getTime() - SEMESTER_START.getTime()) / 1000)
+);
+
 /* ===== 유틸 ===== */
-function nextWeekdayOnOrAfter(base: Date, weekday: number): Date {
-  const d = new Date(
-    base.getFullYear(),
-    base.getMonth(),
-    base.getDate(),
-    0,
-    0,
-    0
-  );
-  const diff = (weekday - d.getDay() + 7) % 7;
-  d.setDate(d.getDate() + diff);
-  return d;
-}
-function sessionStartOn(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
-}
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
@@ -50,34 +32,12 @@ const fmtKRW0 = new Intl.NumberFormat("ko-KR", {
   currency: "KRW",
   maximumFractionDigits: 0,
 });
-const fmtKRW2 = new Intl.NumberFormat("ko-KR", {
-  style: "currency",
-  currency: "KRW",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
-/* ===== 핵심: 가변 분 단위로 경과 수업 초 산출 ===== */
-function elapsedSecondsByPlan(now: Date): number {
+/* ===== 핵심: 학기 전체 기간을 기준으로 경과 초 산출(선형) ===== */
+function elapsedSecondsLinear(now: Date): number {
   if (now <= SEMESTER_START) return 0;
   const endBound = now < SEMESTER_END ? now : SEMESTER_END;
-
-  let elapsed = 0;
-  for (const plan of CLASS_DAY_PLANS) {
-    const d = nextWeekdayOnOrAfter(SEMESTER_START, plan.weekday);
-    while (d <= endBound) {
-      const s = sessionStartOn(d);
-      const e = new Date(s.getTime() + plan.minutes * 60 * 1000);
-
-      if (endBound >= e) {
-        elapsed += plan.minutes * 60; // 완전히 지난 수업
-      } else if (endBound > s) {
-        elapsed += Math.floor((endBound.getTime() - s.getTime()) / 1000); // 진행 중
-      }
-      d.setDate(d.getDate() + 7); // 다음 주 동일 요일
-    }
-  }
-  return elapsed;
+  return Math.floor((endBound.getTime() - SEMESTER_START.getTime()) / 1000);
 }
 
 /* ===== 컴포넌트 ===== */
@@ -92,7 +52,7 @@ export default function Page() {
     const tick = () => {
       if (!didHydrate) {
         didHydrate = true;
-        setHydrated(true); // ✅ rAF 콜백(비동기)에서 호출
+        setHydrated(true);
       }
       setNow(new Date());
       raf = requestAnimationFrame(tick);
@@ -102,34 +62,36 @@ export default function Page() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // 계산
+  // 계산: 학기 전체 기간 기준으로 초당 실시간 차감
   const calc = useMemo(() => {
-    const elapsedSec = elapsedSecondsByPlan(now);
-    const capped = clamp(elapsedSec, 0, TOTAL_SECS);
-    const ratio = TOTAL_SECS > 0 ? capped / TOTAL_SECS : 0;
+    const elapsedSec = elapsedSecondsLinear(now);
+    const capped = clamp(elapsedSec, 0, DURATION_SECS);
+    const ratio = DURATION_SECS > 0 ? capped / DURATION_SECS : 0;
 
-    const used = PER_SEC * capped;
+    // 초당 단가는 전체 기간을 기준으로 산출
+    const perSec = FIXED_TUITION / DURATION_SECS;
+
+    const used = perSec * capped;
     const remain = FIXED_TUITION - used;
-    const perMin = PER_SEC * 60;
+    const perMin = perSec * 60;
+
+    const secsLeft = DURATION_SECS - capped;
 
     return {
       ratio,
       used,
       remain,
       usedKRW0: fmtKRW0.format(used),
-      usedKRW2: fmtKRW0.format(used),
       remainKRW0: fmtKRW0.format(remain),
-      remainKRW2: fmtKRW0.format(remain),
       pctText: `${Math.round(ratio * 100)}%`,
-      timeLeftText: `남은 수업시간 ${fmtDuration((TOTAL_SECS - capped) / 60)}`,
       rateText: `현재 속도: 분당 약 ${fmtKRW0.format(
         perMin
-      )} • 초당 약 ${PER_SEC.toFixed(2)}원`,
-      scheduleText: `수업: 수 3시간 / 토 6시간 • 총 ${TOTAL_HOURS}시간`,
+      )} • 초당 약 ${perSec.toFixed(2)}원`,
+      scheduleText: `기간: 2025-09-02 ~ 2025-12-20 • 초당 실시간 차감`,
     };
   }, [now]);
 
-  // 진행바 CSS 변수 즉시 반영 (프레임마다 업데이트)
+  // 진행바 CSS 변수 즉시 반영
   useEffect(() => {
     if (!hydrated) return;
     document.documentElement.style.setProperty(
@@ -154,12 +116,11 @@ export default function Page() {
           </h1>
           {hydrated ? (
             <div className={styles.tag} role="status" aria-live="polite">
-              <b>{calc.pctText}</b> 만큼 사용 중 •{" "}
-              <span>{calc.timeLeftText}</span>
+              <b>{calc.pctText}</b> 만큼 사용 중
             </div>
           ) : (
             <div className={styles.tag} aria-hidden="true">
-              <b>0%</b> 만큼 사용 중 • <span>남은 수업시간 계산 중…</span>
+              <b>0%</b> 만큼 사용 중 • <span>남은 시간 계산 중…</span>
             </div>
           )}
         </div>
@@ -188,19 +149,18 @@ export default function Page() {
               <div className={styles.fill}></div>
             </div>
 
-            {/* 정수/소수 표시를 모두 제공: 소수(실시간) + 정수(요약) */}
             {hydrated ? (
               <div className={styles.stats}>
                 <div className={styles.pill}>
                   <span className={styles.hint}>지금까지 사용된 등록금</span>
                   <span className={styles.num} title={calc.usedKRW0}>
-                    {calc.usedKRW2}
+                    {calc.usedKRW0}
                   </span>
                 </div>
                 <div className={styles.pill}>
                   <span className={styles.hint}>남은 등록금</span>
                   <span className={styles.num} title={calc.remainKRW0}>
-                    {calc.remainKRW2}
+                    {calc.remainKRW0}
                   </span>
                 </div>
               </div>
