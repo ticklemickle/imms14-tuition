@@ -186,7 +186,8 @@ export default function Page() {
       </section>
 
       <footer>
-        만든이: <a href="">JunHyun Lee</a> • 테마: 임스덕
+        만든이: <span style={{ color: "var(--accent)" }}>JunHyun Lee</span> •
+        테마: <span style={{ color: "var(--accent)" }}>임스덕</span>
       </footer>
     </div>
   );
