@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
 
 /* ===== 학기 기간 ===== */
@@ -86,19 +86,20 @@ export default function Page() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const id = setTimeout(() => setHydrated(true), 0); // ✅ 동기 호출 제거
-
     let raf: number;
+    let didHydrate = false;
+
     const tick = () => {
+      if (!didHydrate) {
+        didHydrate = true;
+        setHydrated(true); // ✅ rAF 콜백(비동기)에서 호출
+      }
       setNow(new Date());
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
 
-    return () => {
-      clearTimeout(id);
-      cancelAnimationFrame(raf);
-    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   // 계산
@@ -116,9 +117,9 @@ export default function Page() {
       used,
       remain,
       usedKRW0: fmtKRW0.format(used),
-      usedKRW2: fmtKRW2.format(used),
+      usedKRW2: fmtKRW0.format(used),
       remainKRW0: fmtKRW0.format(remain),
-      remainKRW2: fmtKRW2.format(remain),
+      remainKRW2: fmtKRW0.format(remain),
       pctText: `${Math.round(ratio * 100)}%`,
       timeLeftText: `남은 수업시간 ${fmtDuration((TOTAL_SECS - capped) / 60)}`,
       rateText: `현재 속도: 분당 약 ${fmtKRW0.format(
@@ -167,7 +168,7 @@ export default function Page() {
       <section className={styles.card}>
         <div className={styles.col}>
           <div className={styles.inputs}>
-            <h2 style={{ margin: "0 0 4px", fontSize: 18 }}>Time is gold</h2>
+            <strong>Time is gold</strong>
 
             <div>
               <strong>이번 학기 등록금:</strong>{" "}
