@@ -102,17 +102,19 @@ export default function Page() {
 
   return (
     <div className={styles.wrap}>
+      {/* 이미지 영역 추가 */}
+      <img src="/immsDuck.png" alt="임스덕" className={styles.artwork} />
       <header>
-        <div className={styles.logo} aria-hidden="true">
+        {/* <div className={styles.logo} aria-hidden="true">
           <div className={styles.cone}></div>
           <div className={styles.scoop}>
             <div className={styles.shine}></div>
           </div>
           <div className={styles.drip}></div>
-        </div>
+        </div> */}
         <div>
           <h1>
-            등록금이 살살 녹는다 <span aria-hidden="true"></span>
+            등록금이 녹는 체감 속도 <span aria-hidden="true"></span>
           </h1>
           {hydrated ? (
             <div className={styles.tag} role="status" aria-live="polite">
@@ -127,19 +129,6 @@ export default function Page() {
       </header>
 
       <section className={styles.card}>
-        {/* 이미지 영역 추가 */}
-        <div style={{ position: "absolute", top: "20px", right: "40px" }}>
-          <img
-            src="/immsDuck.png"
-            alt="임스덕"
-            style={{
-              width: "90px",
-              borderRadius: "12px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-            }}
-          />
-        </div>
-
         <div className={styles.col}>
           <div className={styles.inputs}>
             <strong>Time is gold 💰</strong>
@@ -165,7 +154,7 @@ export default function Page() {
             {hydrated ? (
               <div className={styles.stats}>
                 <div className={styles.pill}>
-                  <span className={styles.hint}>지금까지 사용된 등록금</span>
+                  <span className={styles.hint}>사용된 등록금</span>
                   <span className={styles.num} title={calc.usedKRW0}>
                     {calc.usedKRW0}
                   </span>

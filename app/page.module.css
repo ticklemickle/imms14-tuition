@@ -14,7 +14,7 @@
 .wrap {
   max-width: 520px;
   margin-inline: auto;
-  padding: 28px 20px;
+  padding: 10px 20px;
   background: var(--bg);
   color: var(--text);
   font-family: "Pretendard", "Noto Sans KR", sans-serif;
@@ -93,10 +93,11 @@
 }
 
 .tag {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center; /* ✅ 추가 */
   gap: 8px;
-  padding: 8px 70px;
+  padding: 8px 20px;
   border-radius: 999px;
   background: #ffffff;
   backdrop-filter: blur(8px);
@@ -110,7 +111,8 @@
 }
 
 .card {
-  width: 500px;
+  width: 100%; /* ✅ 변경 */
+  max-width: 500px; /* 데스크톱 상한만 두기 */
   margin-top: 22px;
   background: #fff;
   border: 1px solid #00000010;
@@ -118,7 +120,6 @@
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   transition: transform 0.25s ease;
-  position: relative; /* ✅ 추가 */
 }
 
 .card:hover {
@@ -130,6 +131,7 @@
   flex-direction: column;
   gap: 18px;
   padding: 22px;
+  padding-right: 150px; /* ✅ 이미지가 겹치지 않도록 우측 여백 추가 */
 }
 
 .inputs strong {
@@ -219,7 +221,7 @@
 .wrap {
   max-width: 520px;
   margin-inline: auto;
-  padding: 28px 20px;
+  padding: 10px 20px;
   background: var(--bg);
   color: var(--text);
   font-family: "Pretendard", "Noto Sans KR", sans-serif;
@@ -231,4 +233,28 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+/* 3) 이미지 스타일(공용) */
+.artwork {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: clamp(88px, 22vw, 120px); /* 화면에 따라 부드럽게 조절 */
+
+  height: auto;
+  border-radius: 14px;
+  /* box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12); */
+}
+
+/* 4) 모바일(좁은 화면)에서는 겹치지 않게 '정적 배치'로 전환 */
+@media (max-width: 480px) {
+  .col {
+    padding-right: 22px;
+  }
+  .artwork {
+    position: static; /* ✅ 절대배치 해제 → 흐름 안에 배치 */
+    /* margin-left: auto; 우측 정렬 */
+    /* margin-top: 6px; */
+    width: clamp(100px, 30vw, 140px);
+  }
 }
