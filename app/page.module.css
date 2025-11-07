@@ -1,14 +1,30 @@
-/* page.module.css (수정본) */
+/* page.module.css (CSS Modules 규칙 준수 버전) */
+
+/* 전역 변수는 :global로 */
+:global(:root) {
+  --bg: #fffaf2;
+  --text: #333;
+  --hint: #777;
+  --accent: #ffb48a;
+  --mint: #a3f5c7;
+  --straw: #ff9fa6;
+  --vanilla: #fff2cf;
+}
 
 .wrap {
   max-width: 520px;
   margin-inline: auto;
-  padding: 20px;
+  padding: 28px 20px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+  line-height: 1.6;
 }
 
+/* 순수 태그 선택자 → .wrap으로 스코프 */
 .wrap header {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
 }
 
@@ -20,14 +36,15 @@
   filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.08));
 }
 
+/* 부드러운 아이스크림 */
 .cone {
   position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 44px;
+  width: 42px;
   height: 50px;
-  background: var(--accent);
+  background: linear-gradient(180deg, #ffb48a, #e07d3a);
   clip-path: polygon(50% 100%, 0 0, 100% 0);
 }
 
@@ -38,117 +55,90 @@
   transform: translateX(-50%);
   width: 68px;
   height: 56px;
-  background: var(--vanilla);
+  background: linear-gradient(180deg, #fff2cf, #ffe6b2);
   border-radius: 50px 50px 18px 18px;
-  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.04);
+  box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.04);
+}
+
+.shine {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 9px;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 10px;
+  filter: blur(1px);
 }
 
 .drip {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  width: 14px;
+  width: 12px;
   background: var(--vanilla);
   border-radius: 8px;
   bottom: 38px;
-  height: calc(var(--progress) * 40px);
-  transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  height: calc(var(--progress) * 42px);
+  transition: height 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.shine {
-  position: absolute;
-  top: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 9px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 10px;
-  filter: blur(1px);
-}
-
+/* 순수 태그 선택자 → .wrap으로 스코프 */
 .wrap h1 {
-  font-size: clamp(24px, 6vw, 36px);
-  margin: 6px 0 2px;
-  letter-spacing: -0.02em;
+  font-size: clamp(26px, 6vw, 36px);
+  margin: 8px 0 4px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
 }
 
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 70px;
   border-radius: 999px;
-  background: #ffffffaa;
-  backdrop-filter: blur(6px);
+  background: #ffffff;
+  backdrop-filter: blur(8px);
   border: 1px solid #00000010;
+  font-size: 16px;
 }
 
 .tag b {
   font-weight: 700;
+  color: var(--accent);
 }
 
 .card {
-  margin-top: 18px;
+  width: 500px;
+  margin-top: 22px;
   background: #fff;
   border: 1px solid #00000010;
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+  transition: transform 0.25s ease;
+  position: relative; /* ✅ 추가 */
+}
+
+.card:hover {
+  transform: translateY(-2px);
 }
 
 .col {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 18px;
+  gap: 18px;
+  padding: 22px;
 }
 
-.inputs {
-  display: grid;
-  gap: 12px;
-}
-
-.inputs label {
-  font-size: 14px;
-  font-weight: 600;
-  display: block;
-  margin-bottom: 6px;
-}
-
-.inputs input[type="number"] {
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: 14px;
-  padding: 14px 16px;
-  border: 1px solid #00000020;
-  background: #fff;
-  font: inherit;
-}
-
-.rowActions {
-  display: flex;
-  gap: 8px;
-}
-
-.btn {
-  flex: 1;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #00000020;
-  background: #fff;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.secondary {
-  background: #fff9ff;
-  border-style: dashed;
+.inputs strong {
+  font-size: 16px;
 }
 
 .hint {
-  font-size: 12px;
-  color: #666;
+  font-size: 13px;
+  color: var(--hint);
 }
 
 .viz {
@@ -158,13 +148,12 @@
 }
 
 .bar {
-  height: 14px;
+  height: 16px;
   width: 100%;
-  background: #f3f3f3;
+  background: #f5f5f5;
   border-radius: 999px;
   position: relative;
   overflow: hidden;
-  border: 1px solid #0000000f;
 }
 
 .fill {
@@ -173,20 +162,21 @@
   width: calc(var(--progress) * 100%);
   background: linear-gradient(90deg, var(--straw), var(--mint));
   border-radius: 999px;
-  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
 
 .pill {
   background: #fff9ff;
   border: 1px dashed #ffb6c8;
-  padding: 14px;
-  border-radius: 16px;
+  padding: 16px;
+  border-radius: 14px;
 }
 
 .num {
@@ -197,30 +187,48 @@
 }
 
 .puddle {
-  height: 18px;
-  width: 90%;
+  height: 20px;
+  width: 92%;
   margin: 6px auto 0;
   background: radial-gradient(
-      60% 100% at 50% 60%,
-      #ffe8b7 0%,
-      #fff3da 60%,
-      transparent 61%
-    ),
-    var(--vanilla);
+    60% 100% at 50% 60%,
+    #ffe8b7 0%,
+    #fff3da 60%,
+    transparent 61%
+  );
   border-radius: 999px;
   opacity: calc(0.25 + var(--progress) * 0.45);
-  filter: blur(1px);
-  transition: opacity 0.6s;
+  filter: blur(2px);
+  transition: opacity 0.8s;
 }
 
+/* 순수 태그 선택자 → .wrap으로 스코프 */
 .wrap footer {
-  margin: 24px 0 12px;
+  margin: 28px 0 12px;
   text-align: center;
-  font-size: 12px;
-  color: #777;
+  font-size: 13px;
+  color: #888;
 }
 
+/* 순수 태그 선택자 → .wrap으로 스코프 */
 .wrap a {
   color: #d5486b;
   text-decoration-thickness: 2px;
+}
+
+.wrap {
+  max-width: 520px;
+  margin-inline: auto;
+  padding: 28px 20px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+  line-height: 1.6;
+
+  /* ✅ 세로 중앙 정렬 */
+  min-height: 100vh; /* 화면 전체 높이 기준 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }

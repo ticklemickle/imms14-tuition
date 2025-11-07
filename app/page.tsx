@@ -87,7 +87,7 @@ export default function Page() {
       rateText: `현재 속도: 분당 약 ${fmtKRW0.format(
         perMin
       )} • 초당 약 ${perSec.toFixed(2)}원`,
-      scheduleText: `기간: 2025-09-02 ~ 2025-12-20 • 초당 실시간 차감`,
+      scheduleText: `기간: 2025-09-02 ~ 2025-12-20`,
     };
   }, [now]);
 
@@ -112,11 +112,11 @@ export default function Page() {
         </div>
         <div>
           <h1>
-            등록금이 살살 녹는다 <span aria-hidden="true">🍦</span>
+            등록금이 살살 녹는다 <span aria-hidden="true"></span>
           </h1>
           {hydrated ? (
             <div className={styles.tag} role="status" aria-live="polite">
-              <b>{calc.pctText}</b> 만큼 사용 중
+              <b>{calc.pctText}</b> 만큼 지나갔넹
             </div>
           ) : (
             <div className={styles.tag} aria-hidden="true">
@@ -127,9 +127,22 @@ export default function Page() {
       </header>
 
       <section className={styles.card}>
+        {/* 이미지 영역 추가 */}
+        <div style={{ position: "absolute", top: "20px", right: "40px" }}>
+          <img
+            src="/immsDuck.png"
+            alt="임스덕"
+            style={{
+              width: "90px",
+              borderRadius: "12px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+            }}
+          />
+        </div>
+
         <div className={styles.col}>
           <div className={styles.inputs}>
-            <strong>Time is gold</strong>
+            <strong>Time is gold 💰</strong>
 
             <div>
               <strong>이번 학기 등록금:</strong>{" "}
